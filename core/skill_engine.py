@@ -8,6 +8,7 @@ import subprocess
 from difflib import SequenceMatcher
 from voice.voice_async import speak_async
 from datetime import datetime
+from core.phrases import COMMAND_DONE, random_phrase
 
 def run_exe(path, args=None):
 
@@ -359,20 +360,6 @@ class SkillEngine:
             "рэп рэп открой": "https://rep4rep.com/commentlist/1/0/subscribed",
         }
 
-
-        # -------------------------
-        # ОТВЕТЫ
-        # -------------------------
-        self.success_phrases = [
-            "Уже сделано",
-            "Так точно",
-            "Готово",
-            "Выполнено",
-            "Есть",
-            "Сделано",
-            "Готово, сэр",
-        ]
-
         # -------------------------
         # ЧИСЛА СЛОВАМИ
         # -------------------------
@@ -694,7 +681,7 @@ class SkillEngine:
 
                 threading.Thread(
                     target=speak_async,
-                    args=(random.choice(self.success_phrases),),
+                    args=(random_phrase(COMMAND_DONE),),
                     daemon=True
                 ).start()
 
@@ -800,7 +787,7 @@ class SkillEngine:
 
                 threading.Thread(
                     target=speak_async,
-                    args=(random.choice(self.success_phrases),),
+                    args=(random_phrase(COMMAND_DONE),),
                     daemon=True
                 ).start()
 
@@ -823,7 +810,7 @@ class SkillEngine:
                 if self.open_site(url):
                     threading.Thread(
                         target=speak_async,
-                        args=(random.choice(self.success_phrases),),
+                        args=(random_phrase(COMMAND_DONE),),
                         daemon=True
                     ).start()
                     

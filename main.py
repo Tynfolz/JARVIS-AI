@@ -5,6 +5,11 @@ import threading
 import traceback
 import subprocess
 import requests
+from core.phrases import random_phrase
+from voice.voice_async import speak_async
+from core.phrases import LISTENING
+from core.phrases import GREETINGS
+from datetime import datetime
 
 # -------------------------
 # FIX FOR EXE MODE
@@ -53,7 +58,26 @@ try:
     router = HybridRouter()
 
     print("8 - SPEAK")
-    speak_async("Приветствую, Сэр")
+
+
+    def get_greeting():
+
+        hour = datetime.now().hour
+
+        if 5 <= hour < 12:
+            return random_phrase(GREETINGS["morning"])
+
+        elif 12 <= hour < 18:
+            return random_phrase(GREETINGS["day"])
+
+        elif 18 <= hour < 23:
+            return random_phrase(GREETINGS["evening"])
+
+        else:
+            return random_phrase(GREETINGS["night"])
+
+
+    speak_async(get_greeting())
 
     print("🚀 JARVIS STARTED")
 
@@ -113,7 +137,7 @@ while True:
 
             print("🔥 WAKE WORD")
 
-            speak_async("Слушаю")
+            speak_async(random_phrase(LISTENING),),
 
             continue
 

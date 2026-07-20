@@ -4,6 +4,9 @@ from ai.memory_db import MemoryDB
 from voice.voice_async import speak_async
 from core.skill_engine import SkillEngine
 from ai.search import web_search
+from core.phrases import MODES, random_phrase
+from core.phrases import SEARCH_NOT_FOUND
+from core.phrases import COMMAND_NOT_FOUND
 
 import requests
 
@@ -55,7 +58,7 @@ class HybridRouter:
         if text in ai_on_phrases:
             self.ai_mode = True
 
-            speak("Режим общения активирован")
+            speak(random_phrase(MODES["ai_on"]))
 
             return
 
@@ -84,7 +87,7 @@ class HybridRouter:
         if text in ai_off_phrases:
             self.ai_mode = False
 
-            speak("Режим команд активирован")
+            speak(random_phrase(MODES["ai_off"]))
 
             return
 
@@ -94,7 +97,7 @@ class HybridRouter:
         if text in ["свободен", "спи", "режим ожидания", "оставь"]:
             self.listen_mode = "SLEEP"
 
-            speak_async("Перехожу в режим ожидания")
+            speak(random_phrase(MODES["sleep"]))
 
             return
 
@@ -224,7 +227,7 @@ class HybridRouter:
             results = web_search(query)
 
             if not results:
-                speak("В поиске нет информации")
+                speak_async(random_phrase(SEARCH_NOT_FOUND), ),
                 return
 
             search_context = ""
@@ -282,7 +285,7 @@ class HybridRouter:
         # AI DISABLED
         # -------------------------
         if not self.ai_mode:
-            speak("Команда не найдена")
+            speak_async(random_phrase(COMMAND_NOT_FOUND), ),
 
             return
 
