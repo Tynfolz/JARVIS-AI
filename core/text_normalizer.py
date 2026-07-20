@@ -63,3 +63,7 @@ def normalize_text(text: str) -> str:
     text = re.sub(r"\s+", " ", text).strip()
 
     return text
+
+# ----------------------------------
+# created https://github.com/Tynfolz
+# ----------------------------------

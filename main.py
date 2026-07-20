@@ -22,13 +22,13 @@ print("1")
 from speech.vosk_engine import VoskEngine
 print("2")
 
-from hybrid_router import HybridRouter
+from core.hybrid_router import HybridRouter
 print("3")
 
-from voice_async import speak_async
+from voice.voice_async import speak_async
 print("4")
 
-from tray import start_tray
+from tray.tray import start_tray
 print("5")
 
 # -------------------------
@@ -182,3 +182,7 @@ while True:
         input("\nНажмите Enter...")
 
         break
+
+# ----------------------------------
+# created https://github.com/Tynfolz
+# ----------------------------------

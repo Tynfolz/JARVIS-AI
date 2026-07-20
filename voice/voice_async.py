@@ -9,3 +9,7 @@ def speak_async(text):
         args=(text,),
         daemon=True
     ).start()
+
+# ----------------------------------
+# created https://github.com/Tynfolz
+# ----------------------------------

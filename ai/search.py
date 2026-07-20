@@ -17,3 +17,7 @@ def web_search(query: str, max_results=5):
         print("SEARCH ERROR:", e)
 
     return results
+
+# ----------------------------------
+# created https://github.com/Tynfolz
+# ----------------------------------

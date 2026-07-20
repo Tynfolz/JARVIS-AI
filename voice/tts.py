@@ -172,3 +172,7 @@ def speak(text: str):
 
     except Exception as e:
         print("TTS ERROR:", e)
+
+# ----------------------------------
+# created https://github.com/Tynfolz
+# ----------------------------------

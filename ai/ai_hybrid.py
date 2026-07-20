@@ -48,3 +48,7 @@ def ask_ai(text: str, memory_context: str = ""):
 
     except:
         return "Локальный ИИ недоступен."
+
+# ----------------------------------
+# created https://github.com/Tynfolz
+# ----------------------------------

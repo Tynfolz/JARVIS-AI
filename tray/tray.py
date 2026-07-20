@@ -45,9 +45,10 @@ def quit_app(icon, item):
 # START TRAY
 # -------------------------
 def start_tray():
-    
     icon_path = os.path.join(
-        os.path.dirname(__file__),
+        os.path.dirname(os.path.dirname(__file__)),
+        "assets",
+        "icons",
         "jarvis.ico"
     )
 
@@ -69,3 +70,7 @@ def start_tray():
     hide_console()
 
     icon.run()
+
+# ----------------------------------
+# created https://github.com/Tynfolz
+# ----------------------------------

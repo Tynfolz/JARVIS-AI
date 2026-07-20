@@ -1,17 +1,22 @@
 print("HR 1")
-from ai_hybrid import ask_ai
+from ai.ai_hybrid import ask_ai
+
 print("HR 2")
 from voice.tts import speak
-print("HR 3")
-from memory_db import MemoryDB
-print("HR 4")
-from voice_async import speak_async
-print("HR 5")
-from skill_engine import SkillEngine
-print("HR 6")
-from search import web_search
-import requests
 
+print("HR 3")
+from ai.memory_db import MemoryDB
+
+print("HR 4")
+from voice.voice_async import speak_async
+
+print("HR 5")
+from core.skill_engine import SkillEngine
+
+print("HR 6")
+from ai.search import web_search
+
+import requests
 
 class HybridRouter:
 
@@ -302,3 +307,7 @@ class HybridRouter:
         self.db.add_message("jarvis", response)
 
         speak(response)
+
+# ----------------------------------
+# created https://github.com/Tynfolz
+# ----------------------------------

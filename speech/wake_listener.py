@@ -49,3 +49,7 @@ class WakeListener:
 
         # 🔥 WAKE WORD
         return "джарвис" in text
+
+# ----------------------------------
+# created https://github.com/Tynfolz
+# ----------------------------------

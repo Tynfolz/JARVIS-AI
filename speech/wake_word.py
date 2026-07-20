@@ -27,3 +27,7 @@ class WakeWord:
         print("WAKE LEVEL:", level)
 
         return level > 0.03
+
+# ----------------------------------
+# created https://github.com/Tynfolz
+# ----------------------------------

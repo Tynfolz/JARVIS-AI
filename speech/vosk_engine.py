@@ -3,7 +3,7 @@ import sounddevice as sd
 import queue
 import json
 import threading
-from config import MICROPHONE_NAME
+from core.config import MICROPHONE_NAME
 from vosk import Model, KaldiRecognizer
 
 
@@ -86,3 +86,7 @@ class VoskEngine:
             return self.text_q.get_nowait()
         except:
             return None
+
+# ----------------------------------
+# created https://github.com/Tynfolz
+# ----------------------------------

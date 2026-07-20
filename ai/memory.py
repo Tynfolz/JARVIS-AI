@@ -54,3 +54,7 @@ class Memory:
             return ""
 
         return "\n".join([f"{k}: {v}" for k, v in self.facts.items()])
+
+# ----------------------------------
+# created https://github.com/Tynfolz
+# ----------------------------------
