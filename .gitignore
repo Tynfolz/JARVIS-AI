@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+
+# База памяти
+jarvis_memory.db
+
+# Сборка
+build/
+dist/
+
+# PyInstaller
+*.spec
+
+# Временные файлы
+.cache
+
+# Виртуальное окружение
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
