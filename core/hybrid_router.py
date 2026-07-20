@@ -1,19 +1,8 @@
-print("HR 1")
 from ai.ai_hybrid import ask_ai
-
-print("HR 2")
 from voice.tts import speak
-
-print("HR 3")
 from ai.memory_db import MemoryDB
-
-print("HR 4")
 from voice.voice_async import speak_async
-
-print("HR 5")
 from core.skill_engine import SkillEngine
-
-print("HR 6")
 from ai.search import web_search
 
 import requests
@@ -28,8 +17,6 @@ class HybridRouter:
         self.listen_mode = "ACTIVE"
         self.ai_mode = False
         self.last_action = None
-        self.last_failed_action = None
-        self.pending_context = None
 
         print("🚀 JARVIS FINAL ROUTER READY")
 
@@ -45,7 +32,27 @@ class HybridRouter:
         # -------------------------
         # AI MODE ON
         # -------------------------
-        if text in ["режим общения", "поговорим", "включи ии"]:
+
+        ai_on_phrases = [
+
+            "режим общения",
+            "включи ии",
+            "включи искусственный интеллект",
+            "включи режим ии",
+            "активируй ии",
+            "активируй искусственный интеллект",
+            "давай поговорим",
+            "поговорим",
+            "пообщаемся",
+            "хочу поговорить",
+            "общайся со мной",
+            "перейди в режим общения",
+            "запусти режим общения",
+            "джарвис поговорим",
+            "джарвис включи ии",
+        ]
+
+        if text in ai_on_phrases:
             self.ai_mode = True
 
             speak("Режим общения активирован")
@@ -55,7 +62,26 @@ class HybridRouter:
         # -------------------------
         # AI MODE OFF
         # -------------------------
-        if text in ["режим команд", "выключи ии"]:
+
+        ai_off_phrases = [
+
+            "режим команд",
+            "выключи ии",
+            "отключи ии",
+            "выключи искусственный интеллект",
+            "отключи искусственный интеллект",
+            "перейди в режим команд",
+            "только команды",
+            "режим управления",
+            "командный режим",
+            "верни режим команд",
+            "хватит общения",
+            "закончить разговор",
+            "прекрати разговор",
+            "джарвис только команды",
+        ]
+
+        if text in ai_off_phrases:
             self.ai_mode = False
 
             speak("Режим команд активирован")
@@ -81,15 +107,9 @@ class HybridRouter:
         # -------------------------
         # MEMORY
         # -------------------------
-        print("1")
-
         self.db.add_message("user", text)
 
-        print("2")
-
         self.last_action = text
-
-        print("3")
 
         # -------------------------
         # INTERNET SEARCH
@@ -253,8 +273,6 @@ class HybridRouter:
         # -------------------------
 
         result = self.skills.process(text)
-
-        print("4")
 
         if result:
             return

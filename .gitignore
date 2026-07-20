@@ -14,6 +14,7 @@ dist/
 
 # Временные файлы
 .cache
+JARVIS.exe
 
 # Виртуальное окружение
 venv/
@@ -23,3 +24,7 @@ env/
 # IDE
 .vscode/
 .idea/
+
+# AI Models
+models/qwen/
+*.gguf

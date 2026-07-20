@@ -42,43 +42,6 @@ threading.Thread(
 print("Jarvis starting...")
 
 # -------------------------
-# START OLLAMA
-# -------------------------
-def start_ollama():
-
-    try:
-        requests.get(
-            "http://localhost:11434/api/tags",
-            timeout=2
-        )
-
-        print("OLLAMA READY")
-        return
-
-    except:
-        pass
-
-
-    print("STARTING OLLAMA...")
-
-    env = os.environ.copy()
-    env["OLLAMA_LLM_LIBRARY"] = "cpu"
-
-    subprocess.Popen(
-        [
-            "ollama",
-            "serve"
-        ],
-        env=env,
-        creationflags=subprocess.CREATE_NO_WINDOW
-    )
-
-    time.sleep(5)
-
-
-start_ollama()
-
-# -------------------------
 # INIT
 # -------------------------
 try:
