@@ -1,88 +1,402 @@
 import sqlite3
-import time
+import os
+from datetime import datetime
+
+
+BASE = os.path.dirname(
+    os.path.dirname(__file__)
+)
+
+
+DB_PATH = os.path.join(
+    BASE,
+    "memory.db"
+)
 
 
 class MemoryDB:
 
-    def __init__(self, db_path="jarvis_memory.db"):
 
-        self.conn = sqlite3.connect(db_path, check_same_thread=False)
-        self.cur = self.conn.cursor()
+    def __init__(self):
 
-        self._init_db()
-
-    def _init_db(self):
-
-        self.cur.execute("""
-        CREATE TABLE IF NOT EXISTS facts (
-            key TEXT PRIMARY KEY,
-            value TEXT,
-            confidence REAL
+        self.conn = sqlite3.connect(
+            DB_PATH,
+            check_same_thread=False
         )
-        """)
 
-        self.cur.execute("""
-        CREATE TABLE IF NOT EXISTS messages (
+        self.create_tables()
+
+
+
+    def create_tables(self):
+
+        cursor = self.conn.cursor()
+
+
+        # -------------------------
+        # ИСТОРИЯ ДИАЛОГОВ
+        # -------------------------
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS conversations(
+
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            time TEXT,
+
             role TEXT,
-            text TEXT,
-            timestamp REAL
+
+            message TEXT
+
         )
         """)
 
+
+
+        # -------------------------
+        # ПАМЯТЬ
+        # -------------------------
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS facts(
+
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            category TEXT,
+
+            key TEXT UNIQUE,
+
+            value TEXT,
+
+            importance INTEGER DEFAULT 5,
+
+            time TEXT
+
+        )
+        """)
+
+
+
+        # -------------------------
+        # ОБРАБОТАННЫЕ СООБЩЕНИЯ
+        # -------------------------
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS memory_processed(
+
+            conversation_id INTEGER PRIMARY KEY
+
+        )
+        """)
+
+
+
         self.conn.commit()
 
-    # -------------------------
-    # FACTS
-    # -------------------------
-    def set_fact(self, key, value, confidence=1.0):
 
-        self.cur.execute("""
-        INSERT OR REPLACE INTO facts (key, value, confidence)
-        VALUES (?, ?, ?)
-        """, (key, value, confidence))
+
+    # -------------------------
+    # СОХРАНЕНИЕ СООБЩЕНИЯ
+    # -------------------------
+
+    def add_message(
+        self,
+        role,
+        message
+    ):
+
+        cursor = self.conn.cursor()
+
+
+        cursor.execute(
+            """
+            INSERT INTO conversations
+            (
+                time,
+                role,
+                message
+            )
+            VALUES(?,?,?)
+            """,
+            (
+                str(datetime.now()),
+                role,
+                message
+            )
+        )
+
 
         self.conn.commit()
 
-    def get_fact(self, key):
 
-        self.cur.execute("SELECT value FROM facts WHERE key=?", (key,))
-        row = self.cur.fetchone()
-        return row[0] if row else None
+
+    # -------------------------
+    # ИСТОРИЯ
+    # -------------------------
+
+    def get_history(
+        self,
+        limit=50
+    ):
+
+        cursor = self.conn.cursor()
+
+
+        cursor.execute(
+            """
+            SELECT role,message
+
+            FROM conversations
+
+            ORDER BY id DESC
+
+            LIMIT ?
+            """,
+            (limit,)
+        )
+
+
+        return cursor.fetchall()
+
+
+
+    # -------------------------
+    # ДОБАВИТЬ ФАКТ
+    # -------------------------
+
+    def add_fact(
+        self,
+        category,
+        key,
+        value,
+        importance=5
+    ):
+
+        cursor = self.conn.cursor()
+
+
+        cursor.execute(
+            """
+            INSERT INTO facts
+            (
+                category,
+                key,
+                value,
+                importance,
+                time
+            )
+
+            VALUES(?,?,?,?,?)
+
+
+            ON CONFLICT(key)
+
+            DO UPDATE SET
+
+                value=excluded.value,
+
+                importance=excluded.importance,
+
+                time=excluded.time
+
+            """,
+            (
+                category,
+                key,
+                value,
+                importance,
+                str(datetime.now())
+            )
+        )
+
+
+        self.conn.commit()
+
+
+
+    # -------------------------
+    # ПОЛУЧИТЬ ПАМЯТЬ
+    # -------------------------
 
     def get_facts(self):
 
-        self.cur.execute("SELECT key, value FROM facts")
-        return dict(self.cur.fetchall())
+        cursor = self.conn.cursor()
+
+
+        cursor.execute(
+            """
+            SELECT
+
+                category,
+                key,
+                value
+
+            FROM facts
+
+            ORDER BY importance DESC
+
+            """
+        )
+
+
+        result = {}
+
+
+        for category, key, value in cursor.fetchall():
+
+            result[key] = value
+
+
+        return result
+
+
 
     # -------------------------
-    # MESSAGES
+    # УДАЛИТЬ ФАКТ
     # -------------------------
-    def add_message(self, role, text):
 
-        # защита от list/dict (ВАЖНО!)
-        if isinstance(text, (list, dict)):
-            text = str(text)
+    def delete_fact(
+        self,
+        key
+    ):
 
-        self.cur.execute("""
-        INSERT INTO messages (role, text, timestamp)
-        VALUES (?, ?, ?)
-        """, (role, text, time.time()))
+        cursor = self.conn.cursor()
+
+
+        cursor.execute(
+            """
+            DELETE FROM facts
+
+            WHERE key=?
+
+            """,
+            (key,)
+        )
+
 
         self.conn.commit()
 
-    def get_last_messages(self, limit=10):
 
-        self.cur.execute("""
-        SELECT role, text FROM messages
-        ORDER BY timestamp DESC
-        LIMIT ?
-        """, (limit,))
 
-        rows = self.cur.fetchall()
+    # -------------------------
+    # ОЧИСТИТЬ ПАМЯТЬ
+    # -------------------------
 
-        return list(reversed(rows))
+    def clear_memory(self):
 
-# ----------------------------------
-# created https://github.com/Tynfolz
-# ----------------------------------
+        cursor = self.conn.cursor()
+
+
+        cursor.execute(
+            """
+            DELETE FROM facts
+            """
+        )
+
+
+        self.conn.commit()
+
+
+
+    # -------------------------
+    # НЕОБРАБОТАННЫЕ СООБЩЕНИЯ
+    # -------------------------
+
+    def get_unsorted_messages(
+        self,
+        limit=30
+    ):
+
+        cursor = self.conn.cursor()
+
+
+        cursor.execute(
+            """
+            SELECT
+
+                id,
+                role,
+                message
+
+            FROM conversations
+
+            WHERE id NOT IN
+
+            (
+
+                SELECT conversation_id
+
+                FROM memory_processed
+
+            )
+
+            ORDER BY id
+
+            LIMIT ?
+
+            """,
+            (limit,)
+        )
+
+
+        return cursor.fetchall()
+
+
+
+    # -------------------------
+    # ПОМЕТИТЬ КАК ОБРАБОТАННЫЕ
+    # -------------------------
+
+    def mark_processed(
+        self,
+        ids
+    ):
+
+        cursor = self.conn.cursor()
+
+
+        for i in ids:
+
+            cursor.execute(
+                """
+                INSERT OR IGNORE INTO memory_processed
+
+                VALUES(?)
+
+                """,
+                (i,)
+            )
+
+
+        self.conn.commit()
+
+    # -------------------------
+    # AUTO CLEANUP
+    # -------------------------
+
+    def cleanup_conversations(
+            self,
+            keep=5000
+    ):
+
+        cursor = self.conn.cursor()
+
+        cursor.execute(
+            """
+            DELETE FROM conversations
+
+            WHERE id NOT IN
+            (
+                SELECT id
+
+                FROM conversations
+
+                ORDER BY id DESC
+
+                LIMIT ?
+            )
+            """,
+            (keep,)
+        )
+
+        self.conn.commit()

@@ -15,13 +15,13 @@ from core.router.currency_router import CurrencyRouter
 from core.router.search_router import SearchService
 from core.router.piper_settings_router import PiperSettingsRouter
 from core.router.weather_settings_router import WeatherSettingsRouter
+from ai.memory_sorter import MemorySorter
 
 class HybridRouter:
 
     def __init__(self):
         print("🔥 INIT START SkillEngine")
         self.sleep_requested = False
-        self.db = MemoryDB()
         self.skills = SkillEngine()
         self.piper = PiperSettingsRouter()
         self.weather = WeatherRouter()
@@ -31,6 +31,13 @@ class HybridRouter:
         self.weather_settings = WeatherSettingsRouter()
         self.piper = PiperSettingsRouter()
         self.last_action = None
+        self.db = MemoryDB()
+
+        self.memory_sorter = MemorySorter(
+            self.db
+        )
+
+        self.message_counter = 0
 
         print("🚀 JARVIS FINAL ROUTER READY")
 
@@ -62,6 +69,45 @@ class HybridRouter:
         self.last_action = text
 
         # -------------------------
+        # SIMPLE MEMORY DETECT
+        # -------------------------
+
+        memory_patterns = {
+
+            "люблю игру": "game",
+            "моя любимая игра": "game",
+
+            "люблю музыку": "music",
+            "мой любимый фильм": "movie",
+
+            "я играю в": "game",
+
+        }
+
+        for phrase, key in memory_patterns.items():
+
+            if phrase in text:
+
+                value = text.replace(
+                    phrase,
+                    ""
+                ).strip()
+
+                if value:
+                    self.db.add_fact(
+                        "user",
+                        key,
+                        value,
+                        8
+                    )
+
+                    print(
+                        "🧠 FACT SAVED:",
+                        key,
+                        value
+                    )
+
+        # -------------------------
         # core/router
         # -------------------------
 
@@ -88,6 +134,19 @@ class HybridRouter:
         if result:
             return
 
+        # -------------------------
+        # MEMORY CHECK
+        # -------------------------
+
+        facts = self.db.get_facts()
+
+        memory_context = "\n".join(
+            [
+                f"{k}: {v}"
+                for k, v in facts.items()
+            ]
+        )
+
 
         # -------------------------
         # AI DISABLED
@@ -107,21 +166,34 @@ class HybridRouter:
         )
 
         prompt = f"""
-    Ты JARVIS — русский AI ассистент.
 
-    ВАЖНО:
-    - отвечай только на русском
-    - будь кратким
+        Ты JARVIS — русский AI ассистент.
 
-    ПАМЯТЬ:
-    {memory_context}
+        Используй память пользователя.
 
-    Последняя команда:
-    {self.last_action}
+        Если в памяти есть ответ на вопрос —
+        используй её.
 
-    Пользователь:
-    {text}
-    """
+        Не придумывай факты.
+        Если информации нет в памяти — скажи, что не знаешь.
+        Не заменяй неизвестные данные догадками.
+
+
+        ПАМЯТЬ:
+
+        {memory_context}
+
+
+        Последняя команда:
+
+        {self.last_action}
+
+
+        Пользователь:
+
+        {text}
+
+        """
 
         try:
 
@@ -136,6 +208,27 @@ class HybridRouter:
         self.db.add_message("jarvis", response)
 
         speak(response)
+
+        # -------------------------
+        # MEMORY SORT
+        # -------------------------
+
+        self.message_counter += 1
+
+        if self.message_counter >= 20:
+
+            try:
+
+                self.memory_sorter.analyze()
+
+            except Exception as e:
+
+                print(
+                    "MEMORY SORT ERROR:",
+                    e
+                )
+
+            self.message_counter = 0
 
 # ----------------------------------
 # created https://github.com/Tynfolz
