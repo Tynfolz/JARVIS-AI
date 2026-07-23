@@ -15,6 +15,7 @@ dist/
 # Временные файлы
 .cache
 JARVIS.exe
+test.py
 
 # Виртуальное окружение
 venv/

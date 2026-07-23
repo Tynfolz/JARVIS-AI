@@ -236,6 +236,7 @@ class SkillEngine:
             "разверни все окнам": "ahk/UNRoll up windows.exe",
             "развени они все окна": "ahk/UNRoll up windows.exe",
             "разве они все окна": "ahk/UNRoll up windows.exe",
+            "перезапустись": "ahk/UNRoll up windows.exe",
 
         }
 
