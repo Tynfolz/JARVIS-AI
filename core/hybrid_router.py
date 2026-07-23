@@ -28,6 +28,7 @@ class HybridRouter:
         self.currency = CurrencyRouter()
         self.search = SearchService()
         self.modes = ModeManager()
+        self.weather_settings = WeatherSettingsRouter()
         self.piper = PiperSettingsRouter()
         self.last_action = None
 
