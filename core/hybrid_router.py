@@ -7,6 +7,7 @@ from ai.search import web_search
 from core.phrases import MODES, random_phrase
 from core.phrases import SEARCH_NOT_FOUND
 from core.phrases import COMMAND_NOT_FOUND
+from core import config
 
 import requests
 
@@ -14,7 +15,7 @@ class HybridRouter:
 
     def __init__(self):
         print("🔥 INIT START SkillEngine")
-
+        self.sleep_requested = False
         self.db = MemoryDB()
         self.skills = SkillEngine()
         self.listen_mode = "ACTIVE"
@@ -97,15 +98,46 @@ class HybridRouter:
         if text in ["свободен", "спи", "режим ожидания", "оставь"]:
             self.listen_mode = "SLEEP"
 
+            self.sleep_requested = True
+
             speak(random_phrase(MODES["sleep"]))
 
-            return
+            return True
 
         # -------------------------
-        # IGNORE WHILE SLEEPING
+        # PIPER
         # -------------------------
-        if self.listen_mode == "SLEEP":
-            return
+
+        if text.startswith("смени голос на") or text.startswith("сменить голос на"):
+
+            name = text.replace(
+                "смени голос на",
+                ""
+            ).replace(
+                "сменить голос на",
+                ""
+            ).strip()
+
+            voices = {
+
+                "дмитрий": "dmitri",
+                "ирина": "irina",
+                "руслан": "ruslan",
+
+            }
+
+            if name in voices:
+
+                config.PIPER_VOICE = voices[name]
+
+                speak("Голос изменён")
+
+            else:
+
+                speak("Такого голоса нет")
+
+            return True
+
 
         # -------------------------
         # MEMORY

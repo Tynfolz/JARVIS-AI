@@ -10,6 +10,12 @@ from voice.voice_async import speak_async
 from core.phrases import LISTENING
 from core.phrases import GREETINGS
 from datetime import datetime
+from speech.vosk_engine import VoskEngine
+from speech.wake_word import WakeWord
+from core.hybrid_router import HybridRouter
+from voice.voice_async import speak_async
+from tray.tray import start_tray
+
 
 # -------------------------
 # FIX FOR EXE MODE
@@ -18,23 +24,6 @@ if getattr(sys, "frozen", False):
     import io
     sys.stdout = io.StringIO()
     sys.stderr = io.StringIO()
-
-print("1")
-
-# -------------------------
-# IMPORTS
-# -------------------------
-from speech.vosk_engine import VoskEngine
-print("2")
-
-from core.hybrid_router import HybridRouter
-print("3")
-
-from voice.voice_async import speak_async
-print("4")
-
-from tray.tray import start_tray
-print("5")
 
 # -------------------------
 # START TRAY
@@ -51,14 +40,9 @@ print("Jarvis starting...")
 # -------------------------
 try:
 
-    print("6 - CREATE VOSK")
     engine = VoskEngine()
-
-    print("7 - CREATE ROUTER")
+    wake = WakeWord()
     router = HybridRouter()
-
-    print("8 - SPEAK")
-
 
     def get_greeting():
 
@@ -119,46 +103,59 @@ while True:
 
                 router.skills.reset()
 
-        text = engine.get_text()
+        # -------------------------
+        # Ждем только wakeword
+        # -------------------------
 
-        if not text:
-            time.sleep(0.05)
-            continue
+        if not session_active:
 
-        text = text.lower().strip()
+            if wake.listen():
+                session_active = True
+                last_active = time.time()
 
-        print("HEARD:", text)
+                print("🔥 WAKE WORD")
 
-        if "джарвис" in text:
-            session_active = True
-            last_active = time.time()
+                router.listen_mode = "ACTIVE"
+                router.sleep_requested = False
 
-            router.listen_mode = "ACTIVE" 
+                engine.reset()
 
-            print("🔥 WAKE WORD")
+                time.sleep(0.5)
 
-            speak_async(random_phrase(LISTENING),),
-
-            continue
-
-        if session_active:
-
-            print("ROUTER:", text)
-
-            result = router.process(text)
-
-            if result == "SLEEP":
-
-                session_active = False
-
-                print("💤 SESSION CLOSED")
+                speak_async(random_phrase(LISTENING))
 
                 continue
 
+        # -------------------------
+        # После пробуждения слушаем команду
+        # -------------------------
+
+        if engine is None:
+            continue
+
+        text = engine.get_text()
+
+        if router.sleep_requested:
+            print("💤 ROUTER REQUEST SLEEP")
+
+            router.sleep_requested = False
+
+            session_active = False
+            last_active = 0
+
+            engine.reset()
+
+            continue
+
+        if not text:
+            continue
+
+        print("HEARD:", text)
+
+        if text:
+            result = router.process(text)
+
             last_active = time.time()
-
-        time.sleep(0.01)
-
 
     except Exception:
 

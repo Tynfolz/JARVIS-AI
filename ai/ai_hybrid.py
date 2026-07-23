@@ -17,8 +17,8 @@ MODEL_PATH = os.path.join(
 
 llm = Llama(
     model_path=MODEL_PATH,
-    n_ctx=4096,
-    n_threads=os.cpu_count(),
+    n_ctx=1024,
+    n_threads=max(2, os.cpu_count() // 2),
     verbose=False
 )
 

@@ -1,177 +1,143 @@
-import re
-print("TTS 1")
-import numpy as np
-print("TTS 2")
-import sounddevice as sd
-print("TTS 3")
-import torch
-print("TTS 4")
-from num2words import num2words
-print("TTS 5")
+import subprocess
+import tempfile
 import os
-print("TTS FILE =", __file__)
+
+import sounddevice as sd
+import soundfile as sf
+
+from core import config
 
 
-# -------------------------
-# LOAD MODEL
-# -------------------------
-try:
-    print("TTS 6")
+BASE = os.path.dirname(
+    os.path.dirname(__file__)
+)
 
-    model, _ = torch.hub.load(
-        "snakers4/silero-models",
-        "silero_tts",
-        language="ru",
-        speaker="v4_ru",
-        trust_repo=True
+
+PIPER = os.path.join(
+    BASE,
+    "models",
+    "piper",
+    "piper.exe"
+)
+
+
+VOICES = {
+
+    "dmitri":
+        "ru_RU-dmitri-medium.onnx",
+
+    "ruslan":
+        "ru_RU-ruslan-medium.onnx",
+
+    "irina":
+        "ru_RU-irina-medium.onnx",
+}
+
+
+def get_voice_path():
+
+    voice_name = config.PIPER_VOICE
+
+    if voice_name not in VOICES:
+        voice_name = "ruslan"
+
+    return os.path.join(
+        BASE,
+        "models",
+        "piper",
+        "voices",
+        VOICES[voice_name]
     )
 
-    print("TTS 7")
-
-except Exception:
-    import traceback
-    traceback.print_exc()
-    input("Ошибка загрузки Silero...")
-    raise
-
-SAMPLE_RATE = 48000
-SPEAKER = "aidar"
-
-# уменьшение лагов
-sd.default.latency = ("low", "low")
 
 
-# -------------------------
-# NUMBERS -> WORDS
-# -------------------------
-def numbers_to_words(text):
-
-    def repl(match):
-        try:
-            num = int(match.group())
-            return num2words(num, lang="ru")
-        except:
-            return match.group()
-
-    return re.sub(r"\d+", repl, text)
-
-
-# -------------------------
-# CLEAN TEXT
-# -------------------------
-def clean_text(text: str):
+def speak(text):
 
     if not text:
-        return ""
-
-    text = str(text).lower()
-
-    # -------------------------
-    # markdown / мусор
-    # -------------------------
-    text = text.replace("*", " ")
-    text = text.replace("_", " ")
-    text = text.replace("#", " ")
-    text = text.replace("•", " ")
-
-    # -------------------------
-    # тире между словами
-    # -------------------------
-    text = re.sub(r"\s-\s", " ", text)
-
-    # -------------------------
-    # отрицательные числа
-    # -------------------------
-    text = re.sub(r"-(\d+)", r"минус \1", text)
-
-    # -------------------------
-    # символы
-    # -------------------------
-    text = text.replace("+", " плюс ")
-    text = text.replace("=", " равно ")
-    text = text.replace("%", " процентов ")
-    text = text.replace("°", " градусов ")
-
-    # -------------------------
-    # числа словами
-    # -------------------------
-    text = numbers_to_words(text)
-
-    # -------------------------
-    # убрать английский
-    # -------------------------
-    text = re.sub(r"[a-zA-Z]", " ", text)
-
-    # -------------------------
-    # оставить только русские символы
-    # -------------------------
-    text = re.sub(r"[^0-9а-яё\s\.\,\!\?]", " ", text)
-
-    # -------------------------
-    # пробелы
-    # -------------------------
-    text = re.sub(r"\s+", " ", text).strip()
-
-    # -------------------------
-    # убрать пробелы перед знаками
-    # -------------------------
-    text = text.replace(" .", ".")
-    text = text.replace(" ,", ",")
-    text = text.replace(" !", "!")
-    text = text.replace(" ?", "?")
-
-    return text
+        return
 
 
-# -------------------------
-# SPEAK
-# -------------------------
-def speak(text: str):
+    text = str(text).strip()
+
+
+    if not text:
+        return
+
 
     try:
 
-        text = clean_text(text)
-
-        if not text or len(text) < 2:
-            return
-
-        print("JARVIS TTS:", text)
-
-        # -------------------------
-        # TTS
-        # -------------------------
-        audio = model.apply_tts(
-            text=text,
-            speaker=SPEAKER,
-            sample_rate=SAMPLE_RATE
+        fd, wav = tempfile.mkstemp(
+            suffix=".wav"
         )
 
-        # -------------------------
-        # SPEED UP
-        # -------------------------
-        speed = 1.12
+        os.close(fd)
 
-        indices = np.round(
-            np.arange(0, len(audio), speed)
-        ).astype(int)
 
-        indices = indices[indices < len(audio)]
+        process = subprocess.Popen(
+            [
+                PIPER,
 
-        audio = audio[indices]
+                "--model",
+                get_voice_path(),
 
-        # -------------------------
-        # PLAY AUDIO
-        # -------------------------
+                "--output_file",
+                wav,
+
+
+                "--length_scale",
+                str(config.PIPER_LENGTH_SCALE),
+
+
+                "--noise_scale",
+                str(config.PIPER_NOISE_SCALE),
+
+
+                "--noise_w",
+                str(config.PIPER_NOISE_W),
+            ],
+
+            stdin=subprocess.PIPE,
+
+            stdout=subprocess.DEVNULL,
+
+            stderr=subprocess.DEVNULL,
+
+            text=True,
+
+            encoding="utf-8"
+        )
+
+
+        process.communicate(text)
+
+
+
+        audio, sr = sf.read(
+            wav,
+            dtype="float32"
+        )
+
+
         sd.stop()
 
-        sd.play(audio, SAMPLE_RATE)
+        sd.play(
+            audio,
+            sr
+        )
 
         sd.wait()
 
-        sd.stop()
+
+        os.remove(wav)
+
 
     except Exception as e:
-        print("TTS ERROR:", e)
+
+        print(
+            "PIPER ERROR:",
+            e
+        )
+
 
 # ----------------------------------
 # created https://github.com/Tynfolz

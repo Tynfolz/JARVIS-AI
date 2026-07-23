@@ -5,6 +5,8 @@ import json
 import threading
 from core.config import MICROPHONE_NAME
 from vosk import Model, KaldiRecognizer
+print("USING VOSK FILE:")
+print(__file__)
 
 
 class VoskEngine:
@@ -12,6 +14,8 @@ class VoskEngine:
     def __init__(self):
 
         print("Loading Vosk...")
+        print("MY VOSK VERSION")
+        
 
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         model_path = os.path.join(base_dir, "models", "vosk")
@@ -45,7 +49,7 @@ class VoskEngine:
         self.samplerate = int(device_info["default_samplerate"])
 
         print("MIC =", device_info["name"])
-        
+
         self.q = queue.Queue()
         self.text_q = queue.Queue()
 
@@ -65,8 +69,38 @@ class VoskEngine:
 
         print("Vosk READY")
 
+    def reset(self):
+
+        print("🔄 VOSK RESET")
+
+        self.rec = KaldiRecognizer(
+            self.model,
+            self.samplerate
+        )
+
+        # чистим старые распознанные фразы
+        while not self.text_q.empty():
+            try:
+                self.text_q.get_nowait()
+            except:
+                break
+
+        # чистим аудио-буфер
+        while not self.q.empty():
+            try:
+                self.q.get_nowait()
+            except:
+                break
+
     def callback(self, indata, frames, time, status):
-        self.q.put(bytes(indata))
+
+        data = bytes(indata)
+
+        # тут будет Rustpotter
+        # если услышал Jarvis:
+        # self.wake_detected = True
+
+        self.q.put(data)
 
     def _loop(self):
 
@@ -76,7 +110,11 @@ class VoskEngine:
 
             if self.rec.AcceptWaveform(data):
 
-                text = json.loads(self.rec.Result()).get("text", "")
+                result = json.loads(
+                    self.rec.Result()
+                )
+
+                text = result.get("text", "")
 
                 if text:
                     self.text_q.put(text)
@@ -87,6 +125,13 @@ class VoskEngine:
         except:
             return None
 
+    def stop(self):
+
+        try:
+            self.stream.stop()
+            self.stream.close()
+        except:
+            pass
 # ----------------------------------
 # created https://github.com/Tynfolz
 # ----------------------------------

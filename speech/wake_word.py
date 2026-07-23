@@ -1,33 +1,42 @@
-import sounddevice as sd
-import numpy as np
+import subprocess
+
 
 class WakeWord:
 
     def __init__(self):
 
-        self.device = 9   # 🔥 стабильный ME6S
-        self.samplerate = 44100
+        self.process = subprocess.Popen(
+            [
+                "rustpotter-cli",
+                "spot",
+                r"D:\jarvis\models\rustpotter\jarvis-default.rpw",
+                "-t",
+                "0.65",
+                "-m",
+                "5",
+                "-e"
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1
+        )
+
+        print("🟢 Rustpotter READY")
+
 
     def listen(self):
 
-        audio = sd.rec(
-            int(1.5 * self.samplerate),
-            samplerate=self.samplerate,
-            channels=1,
-            dtype="float32",
-            device=self.device
-        )
+        line = self.process.stdout.readline()
+        print(repr(line))
 
-        sd.wait()
+        if "Wakeword detection" in line:
 
-        audio = np.squeeze(audio)
+            print("🔥 JARVIS")
 
-        level = np.max(np.abs(audio))
+            return True
 
-        print("WAKE LEVEL:", level)
-
-        return level > 0.03
-
+        return False
 # ----------------------------------
 # created https://github.com/Tynfolz
 # ----------------------------------
