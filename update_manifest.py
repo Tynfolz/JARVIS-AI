@@ -15,6 +15,3 @@ CHANGELOG = [
     "Улучшен поиск приложений"
 
 ]
-
-print("MANIFEST DATA:")
-print(data)
