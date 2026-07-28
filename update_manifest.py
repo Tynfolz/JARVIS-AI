@@ -4,14 +4,17 @@ VERSION = "1.0.1"
 FILES = [
 
     "plugins/spotify.py",
-    "core/hybrid_router.py"
+    "core/apps/apps_api.py"
 
 ]
 
 
 CHANGELOG = [
 
-    "Обновлён Spotify плагин",
-    "Исправлен роутер"
+    "Добавлен плагин Spotify",
+    "Улучшен поиск приложений"
 
 ]
+
+print("MANIFEST DATA:")
+print(data)
