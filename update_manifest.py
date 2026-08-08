@@ -1,17 +1,24 @@
-VERSION = "1.0.1"
-
+VERSION = "1.1.0"
 
 FILES = [
 
+    "core/version.py",
+
+    "core/updater.py",
+    "core/file_updater.py",
+
+    "core/router/update_router.py",
+    "core/router/update_apply_router.py",
+
     "plugins/spotify.py",
-    "core/apps/apps_api.py"
 
 ]
 
-
 CHANGELOG = [
 
-    "Добавлены настройки пользователя",
-    "расширение Router системы"
+    "Добавлено автоматическое обновление JARVIS",
+    "Исправлена система загрузки файлов",
+    "Добавлено резервное восстановление файлов",
+    "Улучшена проверка обновлений",
 
 ]
