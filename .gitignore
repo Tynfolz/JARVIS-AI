@@ -4,6 +4,10 @@ __pycache__/
 
 # База памяти
 jarvis_memory.db
+memory.db
+apps.db
+apps.db-journal
+jarvis.log
 
 # Сборка
 build/
