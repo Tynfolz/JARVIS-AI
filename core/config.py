@@ -23,6 +23,15 @@ LLM_CTX = 4096                 # размер контекста
 LLM_PRELOAD = False            # грузить модель при старте (True) или при первом вопросе (False)
 MEMORY_SORT_EVERY = 20         # анализ памяти раз в N сообщений
 
+WAKE_THRESHOLD = 0.6  # ниже - чувствительнее (и больше ложных)
+WAKE_MIN_SCORES = 5
+WAKE_EAGER = True
+WAKE_EXTRA_ARGS = []  # например ["--gain-normalizer", "--band-pass"]
+# точные имена флагов: rustpotter-cli spot --help
+WAKE_MODELS = None  # список имён .rpw; None = список по умолчанию
+WAKE_KILL_STALE = True
+WAKE_EXE = r"models\rustpotter\rustpotter-cli.exe"
+
 
 def set_config(name, value):
     """Меняет настройку в памяти и сохраняет в этот файл."""

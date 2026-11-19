@@ -1,0 +1,24 @@
+# Core dependencies
+llama-cpp-python>=0.2.70
+vosk>=0.3.45
+sounddevice>=0.4.6
+soundfile>=0.12.1
+rapidfuzz>=3.9.0
+ddgs>=0.6.0
+requests>=2.31.0
+pyperclip>=1.8.2
+
+# GUI / Tray
+pystray>=0.19.5
+pillow>=10.0.0
+
+# Windows-specific (for Spotify plugin, tray)
+pywin32>=306
+psutil>=5.9.0
+keyboard>=0.13.5
+pycaw>=20220620
+
+# Optional: for development
+# pytest>=7.4.0
+# mypy>=1.5.0
+# ruff>=0.1.0

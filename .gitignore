@@ -1,13 +1,15 @@
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
 
-# База памяти
+# База памяти / логи
 jarvis_memory.db
 memory.db
 apps.db
 apps.db-journal
 jarvis.log
+*.log
 
 # Сборка
 build/
@@ -29,7 +31,29 @@ env/
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# AI Models
+# AI Models (большие файлы)
 models/qwen/
+models/vosk/
+models/piper/voices/*.onnx
+models/piper/*.onnx
+models/piper/*.json
+models/rustpotter/
 *.gguf
+*.bin
+
+# OS
+.DS_Store
+Thumbs.db
+
+# pytest / mypy / ruff
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# Claude Code settings (ignore)
+.claude/
