@@ -24,7 +24,7 @@ def run(jarvis, text):
         return True
 
     jarvis.say("Начинаю обновление")
-    print("🔄 UPDATE START", update.get("version"), files)
+    print("[UPDATE START]", update.get("version"), files)
 
     count = FileUpdater().update_files(files)
     if count != len(files):

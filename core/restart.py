@@ -22,7 +22,7 @@ def restart_jarvis(delay=0.5):
         arguments = sys.argv[1:]
 
         print("===================================")
-        print("🔄 JARVIS RESTART")
+        print("[RESTART] JARVIS RESTART")
         print("PYTHON:", python_executable)
         print("SCRIPT:", script_path)
         print("ARGS:", arguments)
@@ -40,7 +40,7 @@ def restart_jarvis(delay=0.5):
             creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
         )
 
-        print("🚀 NEW JARVIS PROCESS STARTED")
+        print("[RESTART] NEW JARVIS PROCESS STARTED")
 
         # Завершаем старый процесс
         os._exit(0)
@@ -48,7 +48,7 @@ def restart_jarvis(delay=0.5):
     except Exception as e:
 
         print(
-            "❌ RESTART ERROR:",
+            "[RESTART ERROR]:",
             e
         )
 
