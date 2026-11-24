@@ -1,16 +1,40 @@
 import subprocess
 import tempfile
 import os
+import threading
+import time
 
+import numpy as np
 import sounddevice as sd
 import soundfile as sf
 
 from core import config
+from core.audio_state import feed as audio_state_feed
 
 
 BASE = os.path.dirname(
     os.path.dirname(__file__)
 )
+
+
+# ---------------------------------------------------------------
+# Время окончания последнего воспроизведения TTS.
+# WakeWord не срабатывает, пока идёт или только что дошла речь Джарвиса:
+# иначе он «будит сам себя» своим же приветствием/ответом.
+# ---------------------------------------------------------------
+_tts_finish_lock = threading.Lock()
+_tts_finished_at = 0.0
+
+
+def note_tts_finished():
+    global _tts_finished_at
+    with _tts_finish_lock:
+        _tts_finished_at = time.monotonic()
+
+
+def tts_quiet_since() -> float:
+    with _tts_finish_lock:
+        return _tts_finished_at
 
 
 PIPER = os.path.join(
@@ -118,6 +142,7 @@ def speak(text):
         )
 
 
+        # Подавляем собственный голос: пока играет TTS, wake-word не будит.
         sd.stop()
 
         sd.play(
@@ -125,10 +150,19 @@ def speak(text):
             sr
         )
 
+        # Подмешиваем копию PCM в rms-пульс (тоже «тихая» зона на время речи).
+        try:
+            pcm = (np.clip(audio, -1.0, 1.0) * 32767.0).astype(np.int16)
+            audio_state_feed(pcm.tobytes())
+        except Exception:
+            pass
+
         sd.wait()
 
 
         os.remove(wav)
+
+        note_tts_finished()
 
 
     except Exception as e:

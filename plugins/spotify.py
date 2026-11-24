@@ -16,6 +16,15 @@ from pycaw.pycaw import AudioUtilities, ISimpleAudioVolume
 from voice.tts import speak
 from core.phrases import COMMAND_DONE, random_phrase
 
+# WebSocket-мост Джарвис↔Spicetify: те же действия, что принимает
+# plugins/spicetify_bridge.py (DJ, плейлисты, поиск треков, громче/тише).
+# Импортируем лениво внутри run(), чтобы не тащить asyncio/websockets,
+# если этот плагин используют без bridge.
+try:
+    from plugins.spicetify_bridge import _send_command
+except Exception:
+    _send_command = None
+
 
 # ============================================================
 # REQUIREMENTS
@@ -683,6 +692,42 @@ def media_previous():
 
 
 # ============================================================
+# DJ / LIKED via Spicetify bridge
+# ============================================================
+
+def _dj_or_liked(text):
+    """Включает режим диджея или «любимые» через spicetify bridge.
+
+    Раньше тут был вызов несуществующего send(), что роняло плагин.
+    Возвращает: True — диджей, "liked" — любимые, False/None — не получилось.
+    """
+    global _send_command
+    if _send_command is None:
+        print("[spotify] spicetify_bridge недоступен — пробую снова импортировать")
+        try:
+            from plugins.spicetify_bridge import _send_command as _sc
+            _send_command = _sc
+        except Exception as e:
+            print("[spotify] spicetify_bridge import failed:", e)
+            return False
+
+    if any(x in text for x in ["любим", "лайк"]):
+        action, payload = "play_playlist", {"name": "любимые", "query": "любимые"}
+        result = _send_command(action, payload)
+        print("[spotify] liked result:", result)
+        if result and result.get("ok"):
+            return "liked"
+        return False
+
+    action, payload = "play_dj", {}
+    result = _send_command(action, payload)
+    print("[spotify] play_dj result:", result)
+    if result and result.get("ok"):
+        return True
+    return False
+
+
+# ============================================================
 # RUN
 # ============================================================
 
@@ -712,9 +757,11 @@ def run(jarvis, text):
         "диджея",
         "режим диджея",
     ]):
-        result = send("play_dj", {})
-        if result and result.get("ok"):
+        result = _dj_or_liked(text)
+        if result is True:
             speak("Подбираю музыку")
+        elif result == "liked":
+            speak("Включаю любимые треки")
         else:
             speak("Не удалось включить диджея")
         return True

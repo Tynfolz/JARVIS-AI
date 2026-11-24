@@ -46,6 +46,7 @@ import weakref
 from pathlib import Path
 
 from core import config
+from core.audio_state import recent_silence, loud_fraction
 
 BASE = Path(__file__).resolve().parent.parent
 MODELS_DIR = BASE / "models" / "rustpotter"
@@ -159,6 +160,18 @@ class WakeWord:
     MAX_AGE = 1.5          # сек: событие старше этого пришло «не вовремя» и игнорируется
     RESTART_EVERY = 3.0    # сек: не чаще одного перезапуска rustpotter-cli
 
+    # ---- фильтр ложных срабатываний (порог при этом НЕ трогаем) ----
+    TTS_MUTE_WINDOW = 6.0            # после собственной речи Джарвиса столько сек не будимся
+    NOISE_SILENCE_WINDOW = 1.5       # в этом окне перед срабатыванием должна быть тишина
+    NOISE_SILENCE_RMS = 0.045        # «тихо» — RMS ниже этого (≈ -27 дБFS)
+    NOISE_LOUD_FRACTION = 0.55       # доля громких блоков за окно; больше — это музыка/ТВ, а не речь
+    NOISE_LOUD_RMS = 0.10            # «громко» — RMS выше этого (≈ -20 дБFS)
+    NOISE_LOUD_WINDOW = 2.5          # за какой период смотреть долю громкого
+
+    # После сна/закрытия сессии не будимся это время, чтобы «свободен» и музыка
+    # не порождали мгновенного ложного срабатывания.
+    POST_SLEEP_BLOCK = 4.0
+
     def __init__(self):
         # Сначала ищем .exe — до моделей, чтобы ошибка была по делу
         self.exe = _find_rustpotter_exe()
@@ -173,6 +186,7 @@ class WakeWord:
         self._last_fire = float("-inf")
         self._last_start = 0.0
         self._stopping = False
+        self._blocked_until = 0.0
         self.process = None
 
         _instances.add(self)
@@ -204,6 +218,26 @@ class WakeWord:
         return models
 
     def _command(self):
+        # Базовый набор фильтров Rustpotter (не трогая порог):
+        #  * --gain-normalizer / --min-gain / --max-gain — выравнивает громкость
+        #    входа: тихую речь усиливает (не теряется), очень громкий фон не
+        #    «зашкаливает» и не превращается в ложное срабатывание.
+        #  * --band-pass + --low-cutoff — убирает саббас (<80 Гц): гул музыки,
+        #    вентиляторов, «бубнёж» динамиков. Верхнюю границу подняли до 4 кГц,
+        #    чтобы не зарезать форманты слова «джарвис» (у речи энергия до ~4 кГц).
+        #    Если хочется жёстче — в config.py: WAKE_EXTRA_ARGS с --high-cutoff.
+        # Пороги в конфиге (WAKE_THRESHOLD и т.д.) не меняются.
+        extra = list(_cfg("WAKE_EXTRA_ARGS", []))
+        base = [
+            "--gain-normalizer",
+            "--min-gain", str(_cfg("WAKE_MIN_GAIN", 0.3)),
+            "--max-gain", str(_cfg("WAKE_MAX_GAIN", 2.5)),
+            "--band-pass",
+            "--low-cutoff", str(_cfg("WAKE_LOW_CUTOFF", 80)),
+            "--high-cutoff", str(_cfg("WAKE_HIGH_CUTOFF", 4000)),
+        ]
+        if not extra:
+            extra = base
         cmd = [
             self.exe, "spot",
             "-t", str(_cfg("WAKE_THRESHOLD", 0.5)),
@@ -211,7 +245,7 @@ class WakeWord:
         ]
         if _cfg("WAKE_EAGER", True):
             cmd.append("-e")
-        cmd += [str(arg) for arg in _cfg("WAKE_EXTRA_ARGS", [])]
+        cmd += [str(arg) for arg in extra]
         cmd += [str(model) for model in self.models]
         return cmd
 
@@ -265,9 +299,79 @@ class WakeWord:
     # API (совместим со старым: listen() -> bool)
     # ------------------------------------------------------------------
 
+    def _passes_context_gate(self, ts):
+        """Аудио-контекст вокруг срабатывания: похоже ли на реальное обращение.
+
+        Без этого Rustpotter срабатывает на музыке/фоне (порог поднять нельзя —
+        настоящий «джарвис» у моделей ~0.61-0.64, почти как фоновые отклики).
+        """
+        # 1. Своя речь — не будимся самому себе.
+        try:
+            from voice.tts import tts_quiet_since
+            quiet = tts_quiet_since()
+            if time.monotonic() - quiet < self.TTS_MUTE_WINDOW:
+                print(
+                    f"🔇 Wake заблокирован: своя речь ок. {time.monotonic() - quiet:.1f}с назад"
+                )
+                return False
+        except Exception:
+            pass
+
+        # 2. Перед срабатыванием должна быть «тишина» — человеческая речь.
+        #    Непрерывная громкая музыка/шум её не даёт.
+        if not recent_silence(self.NOISE_SILENCE_WINDOW, self.NOISE_SILENCE_RMS):
+            print(
+                f"🔇 Wake заблокирован: сплошной фон/музыка "
+                f"(нет тишины в {self.NOISE_SILENCE_WINDOW:.1f}с)"
+            )
+            return False
+
+        # 3. Если за последние секунды в микрофоне всё время «громко»
+        #    (доля громких блоков > 55%), а сейчас прозвучала «тихая» точка —
+        #    это пауза в музыке/ТВ, а не речь человека. Реальный «джарвис»
+        #    произносится в тишине, где громких блоков почти нет.
+        if loud_fraction(self.NOISE_LOUD_WINDOW, self.NOISE_LOUD_RMS) >= self.NOISE_LOUD_FRACTION:
+            # Но если прямо сейчас в микрофон ещё приходит громкий сигнал,
+            # значит человек говорит поверх музыки — пропускаем (не блокируем).
+            from core.audio_state import current_rms
+            if current_rms() < self.NOISE_LOUD_RMS:
+                print(
+                    f"🔇 Wake заблокирован: пауза в музыке/ТВ "
+                    f"(громкого фона {self.NOISE_LOUD_FRACTION:.0%})"
+                )
+                return False
+
+        return True
+
+    def block(self, seconds: float):
+        """Запретить срабатывание на ближайшие `seconds` секунд.
+
+        Звать после команды сна/закрытия сессии, чтобы слова «свободен»
+        и следующий за ними фрагмент музыки не будили Джарвиса.
+        """
+        self._blocked_until = max(self._blocked_until, time.monotonic() + seconds)
+
     def listen(self, timeout=0.5):
         """True, если только что прозвучало wake-word. Ждёт не дольше timeout секунд."""
-        end = time.monotonic() + timeout
+        now = time.monotonic()
+
+        # После сна/закрытия сессии события в очереди не должны будить мгновенно.
+        if now < self._blocked_until:
+            self.clear()   # выкидываем всё, что накопилось за блок-окно
+            time.sleep(min(0.3, self._blocked_until - now))
+            return False
+        # События, пришедшие во время блок-окна, тоже не наше — выбросить.
+        if self._blocked_until:
+            try:
+                while True:
+                    ts = self._events.get_nowait()
+                    if ts >= self._blocked_until:
+                        self._events.put(ts)
+                        break
+            except queue.Empty:
+                pass
+
+        end = now + timeout
 
         while True:
             left = max(end - time.monotonic(), 0.0)
@@ -281,8 +385,11 @@ class WakeWord:
                 continue    # сработало, пока шла сессия - не наше
             if ts - self._last_fire < self.COOLDOWN:
                 continue    # дубль от соседней модели
-            self._last_fire = ts
-            return True
+
+            # Фильтр ложных срабатываний (не трогая порог чувствительности).
+            if not _cfg("WAKE_NOISE_FILTER", True) or self._passes_context_gate(ts):
+                self._last_fire = ts
+                return True
 
     def clear(self):
         """Выбросить накопленные события (звать при закрытии сессии)."""

@@ -89,7 +89,7 @@ try:
     from core.jarvis_router import JarvisRouter
     from core.phrases import GREETINGS, LISTENING, random_phrase
     from speech.vosk_engine import VoskEngine
-    from speech.wake_word import WakeWord
+    from speech.wake_factory import WakeWord
     from voice.voice_async import speak_async
 except Exception:
     fatal("IMPORT ERROR")
@@ -165,6 +165,8 @@ def main():
             if time.time() - last_active > SESSION_TIMEOUT:
                 print("💤 SESSION CLOSED")
                 session_active = False
+                wake.clear()
+                wake.block(wake.POST_SLEEP_BLOCK)
                 router.reset_context()
                 continue
 
@@ -181,6 +183,8 @@ def main():
                 print("💤 SLEEP")
                 router.sleep_requested = False
                 session_active = False
+                wake.clear()
+                wake.block(wake.POST_SLEEP_BLOCK)
                 router.reset_context()
                 engine.reset()
 

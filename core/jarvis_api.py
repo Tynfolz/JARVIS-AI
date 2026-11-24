@@ -11,7 +11,16 @@ from voice.voice_async import speak_async
 
 
 class OpenAPI:
-    def program(self, command):
+    def program(self, command, shell=False):
+        try:
+            if shell:
+                subprocess.Popen(command, shell=True)
+            else:
+                subprocess.Popen(command)
+            return True
+        except Exception as e:
+            print("OPEN PROGRAM ERROR:", e)
+            return False
         try:
             subprocess.Popen(command)
             return True

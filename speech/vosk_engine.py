@@ -3,6 +3,7 @@ import sounddevice as sd
 import queue
 import json
 import threading
+from core.audio_state import feed as audio_state_feed
 from core.config import MICROPHONE_NAME
 from vosk import Model, KaldiRecognizer
 print("USING VOSK FILE:")
@@ -95,6 +96,9 @@ class VoskEngine:
     def callback(self, indata, frames, time, status):
 
         data = bytes(indata)
+
+        # Кормим rms-пульс микрофона для фильтра ложных wake-word
+        audio_state_feed(data)
 
         # тут будет Rustpotter
         # если услышал Jarvis:

@@ -20,7 +20,7 @@ class AppIndexer:
     def refresh(self):
 
         print(
-            "📦 SCANNING APPLICATIONS..."
+            "[SCANNING APPLICATIONS...]"
         )
 
 
@@ -65,7 +65,7 @@ class AppIndexer:
 
 
         print(
-            f"✅ APPLICATION INDEX UPDATED: {count}"
+            f"[APPLICATION INDEX UPDATED: {count}]"
         )
 
 

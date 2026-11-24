@@ -1,6 +1,5 @@
 import os
 import subprocess
-
 from core.apps.app_database import AppDatabase
 
 
@@ -20,7 +19,7 @@ class AppsAPI:
                 os.startfile(path)
             else:
                 subprocess.Popen(path)
-            print("🚀 OPEN:", app_name)
+            print("[OPEN]:", app_name)
             return True
         except Exception as e:
             print("APP OPEN ERROR:", e)
