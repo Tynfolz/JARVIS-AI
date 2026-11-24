@@ -1,24 +1,54 @@
-VERSION = 0.2.0
+VERSION = "1.0.2"
 
 FILES = [
-
-    coreversion.py,
-
-    coreupdater.py,
-    corefile_updater.py,
-
-    corerouterupdate_router.py,
-    corerouterupdate_apply_router.py,
-
-    pluginsspotify.py,
-
+    "core/apps/app_indexer.py",
+    "core/apps/app_search.py",
+    "core/apps/apps_api.py",
+    "core/audio_state.py",
+    "core/config.py",
+    "core/jarvis_api.py",
+    "core/plugin_loader.py",
+    "free llm.bat",
+    "main.py",
+    "plugins/apps_refresh.py",
+    "plugins/brave.py",
+    "plugins/dota.py",
+    "plugins/powershell.py",
+    "plugins/settings.py",
+    "plugins/spotify.py",
+    "plugins/steam.py",
+    "plugins/telegram.py",
+    "plugins/vpn.py",
+    "speech/pocketsphinx_wake.py",
+    "speech/porcupine_wake.py",
+    "speech/precise_wake.py",
+    "speech/vosk_engine.py",
+    "speech/vosk_wake.py",
+    "speech/wake_factory.py",
+    "speech/wake_word.py",
+    "voice/tts.py",
 ]
 
 CHANGELOG = [
-
-    Добавлено автоматическое обновление JARVIS,
-    Исправлена система загрузки файлов,
-    Добавлено резервное восстановление файлов,
-    Улучшена проверка обновлений,
-
+    "fix(plugins): improve telegram and vpn plugins to use app database",
+    "feat(apps): add multi-drive app scanning support",
+    "v0.2.0: создана система плагинов",
+    "Переход на плагинную архитектуру",
+    "Update update_manifest.py",
+    "Update update_manifest.py",
+    "Update update_manifest.py",
+    "Update update_manifest.py",
+    "Update update_manifest.py",
+    "Update update_manifest.py",
+    "Update update_manifest.py",
+    "Create update_manifest.py",
+    "Долгосрочная и краткосрочная память",
+    "fix: исправлен WeatherSettingsRouter в HybridRouter",
+    "v0.1.1: Изменён роутер, добавлены настройки погоды",
+    "Новый голосовой движок и быстрый Wake Word",
+    "Обновление системы фраз",
+    "Обновление локального AI и исправление роутера",
+    "Упорядочена структура проекта и исправлены импорты",
+    "Initial commit",
 ]
+
