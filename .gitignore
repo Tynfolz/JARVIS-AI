@@ -20,10 +20,12 @@ dist/
 
 # Временные файлы
 .cache
-JARVIS.exe
-test.py
 
 # Виртуальное окружение
+*.exe
+*.tmp
+*.bak
+*.update
 venv/
 .venv/
 env/
@@ -57,3 +59,7 @@ htmlcov/
 
 # Claude Code settings (ignore)
 .claude/
+
+# Локальные батники / временные файлы
+*.bat
+!*.bat.example
