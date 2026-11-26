@@ -70,6 +70,7 @@ FILES = [
 ]
 
 CHANGELOG = [
+    "Complete update system and expand .gitignore to exclude unnecessary files\n\nCo-Authored-By: Claude Code <noreply@anthropic.com>",
     "fix(update): remove emojis from console output (cp1251 encoding issues)",
     "feat(update): complete auto-update system",
     "fix(plugins): improve telegram and vpn plugins to use app database",
@@ -89,6 +90,5 @@ CHANGELOG = [
     "fix: исправлен WeatherSettingsRouter в HybridRouter",
     "v0.1.1: Изменён роутер, добавлены настройки погоды",
     "Новый голосовой движок и быстрый Wake Word",
-    "Обновление системы фраз",
 ]
 
